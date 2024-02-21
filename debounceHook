@@ -1,0 +1,38 @@
+import {useCallback, useEffect, useState} from "react";
+import _debounce from "lodash/debounce";
+import {useActiveElement} from "../atoms/activeElement";
+import {useUpdateElement} from "./useUpdateElement";
+
+export function generateOptionHooks<T>(optionId: string): (value: T) => [T, (value: T) => void] {
+  return (value: T) => {
+    const [activeElement] = useActiveElement();
+    const OnUpdateElement = useUpdateElement();
+    const [option, setOption] = useState<T>(value);
+
+    useEffect(() => {
+      setOption(value);
+    }, [value]);
+
+    const debouncedOnChange = useCallback(
+      _debounce((newValue) => {
+        if (activeElement) {
+          OnUpdateElement(activeElement, optionId, newValue);
+        }
+      }, 0),
+      [activeElement]
+    );
+
+    const setDebounceOption = useCallback(
+      (value: T) => {
+        setOption(value);
+        debouncedOnChange(value);
+      },
+      [debouncedOnChange]
+    );
+
+    return [option, setDebounceOption];
+  };
+}
+
+export const useFontSize = generateOptionHooks<number>("fontSize");
+export const useContent = generateOptionHooks<string>("content");
